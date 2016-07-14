@@ -1,0 +1,18 @@
+-- Options for test-run tarantoolctl
+
+local fio = require('fio')
+
+local workdir = 'var'
+
+default_cfg = {
+    pid_file   = workdir,
+    wal_dir    = workdir,
+    snap_dir   = workdir,
+    sophia_dir = workdir,
+    logger     = workdir,
+    background = false,
+}
+
+instance_dir = fio.abspath('.')
+
+-- vim: set ft=lua :

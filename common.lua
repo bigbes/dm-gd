@@ -25,6 +25,8 @@ local avro_loaders = require('avro_loaders')
 local constants    = require('constants')
 local utils        = require('utils')
 
+local fdup         = fun.duplicate
+
 local worker, port_offset = arg[0]:match('(%a+)-(%d+)')
 port_offset = port_offset or 0
 
@@ -32,7 +34,6 @@ if worker == 'worker' then
     box.cfg{
         wal_mode           = 'none',
         slab_alloc_arena   = 3,
-        -- slab_alloc_maximal = 4*1024*1024,
         listen             = '0.0.0.0:' .. tostring(3301 + port_offset),
         background         = true,
         logger_nonblock    = true
@@ -71,7 +72,6 @@ local task_phase             = constants.task_phase
 local dataSetKeys            = constants.dataSetKeys
 -- config keys
 local FEATURES_LIST          = constants.FEATURES_LIST
-local TASKS_CONFIG_HDFS_PATH = constants.TASKS_CONFIG_HDFS_PATH
 local DATASET_PATH           = constants.DATASET_PATH
 
 -- other
@@ -332,31 +332,30 @@ local function computeGradientDescent(vertex)
     setmetatable(vertex, vertex_mt)
 end
 
-local function generate_worker_uri(cnt)
-    cnt = cnt or 8
-    local sh6servers = fun.range(cnt):map(function(k)
-        return 'sh6.tarantool.org:' .. tostring(3301 + k)
-    end)
-    local sh7servers = fun.range(cnt):map(function(k)
-        return 'sh7.tarantool.org:' .. tostring(3301 + k)
-    end)
-    local sh8servers = fun.range(cnt):map(function(k)
-        return 'sh8.tarantool.org:' .. tostring(3301 + k)
-    end)
-    return sh6servers:chain(sh7servers):chain(sh8servers):totable()
+local function generate_worker_uri(hosts, count)
+    count = count or 8
+    return fun.chain(
+        unpack(
+            fun.iter(hosts):zip(fdup(count)):map(function(host, count)
+                -- create iterator with workers for next host in line
+                local new_it = fun.range(count):zip(
+                    fdup(host)
+                ):map(function(port, host)
+                    return ('%s:%d'):format(host, tostring(3301 + port))
+                end)
+                -- chain new iterator or set it in the first place
+                it = it and new_it or it:chain(new_it)
+            end):totable()
+        )
+    ):totable()
 end
-
---[[--
-local function generate_worker_uri(cnt)
-    return fun.range(cnt or 4):map(function(k)
-        return 'localhost:' .. tostring(3301 + k)
-    end):totable()
-end
---]]--
 
 local common_cfg = {
-    master         = 'sh7.tarantool.org:3301',
-    workers        = generate_worker_uri(23),
+    master         = constants.MASTER_URI,
+    workers        = generate_worker_uri(
+        constants.HOSTS_LIST,
+        constants.INSTANCE_COUNT
+    ),
     compute        = computeGradientDescent,
     combiner       = nil,
     master_preload = avro_loaders.master,
@@ -388,7 +387,7 @@ else
         end
         master.mpool:by_id('MASTER:'):put('vertex.store', {
             key      = {vid = 'MASTER', category = 0},
-            features = fun.duplicate(0.0):take(#wc.featureList):totable(),
+            features = fdup(0.0):take(#wc.featureList):totable(),
             vtype    = constants.vertex_type.MASTER,
             status   = constants.node_status.NEW
         })

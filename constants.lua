@@ -36,9 +36,6 @@ local task_phase      = ffi.new('struct gd_task_phase')
 local dataSetKeys            = {'vid', 'email', 'okid', 'vkid'}
 -- config keys
 local FEATURES_LIST          = "features.list"
-local TASKS_CONFIG_HDFS_PATH = "tasks.config.hdfs.path"
--- local DATASET_PATH        = '/Users/blikh/src/work/pregel-data/tarantool-test'
--- local DATASET_PATH           = '/home/taransible/bigbes-work/pregel-avro-test'
 local DATASET_PATH           = '/home/taransible/bigbes-work/pregel-avro-test-big'
 
 -- other
@@ -79,6 +76,10 @@ do
         end
     })
 end
+-- hosts
+local HOSTS_LIST     = {"myhost1.org", "myhost2.org", "myhost3.org"}
+local INSTANCE_COUNT = 23
+local MASTER_URI     = "master-host.org:3301"
 
 return {
     vertex_type            = vertex_type,
@@ -87,7 +88,6 @@ return {
     task_phase             = task_phase,
     dataSetKeys            = dataSetKeys,
     FEATURES_LIST          = FEATURES_LIST,
-    TASKS_CONFIG_HDFS_PATH = TASKS_CONFIG_HDFS_PATH,
     DATASET_PATH           = DATASET_PATH,
     SUFFIX_TRAIN           = SUFFIX_TRAIN,
     SUFFIX_TEST            = SUFFIX_TEST,
@@ -95,5 +95,8 @@ return {
     DISTRIBUTED_GD_GROUP   = DISTRIBUTED_GD_GROUP,
     MISSING_USERS_COUNT    = MISSING_USERS_COUNT,
     TASK_VERTEX_TYPE       = TASK_VERTEX_TYPE,
-    GDParams               = GDParams
+    GDParams               = GDParams,
+    HOSTS_LIST             = HOSTS_LIST,
+    INSTANCE_COUNT         = INSTANCE_COUNT,
+    MASTER_URI             = MASTER_URI,
 }
